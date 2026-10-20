@@ -5,7 +5,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
-import { supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { useProfile } from '@/lib/useProfile';
 import Nav from '@/components/Nav';
 
@@ -54,6 +54,24 @@ export default function Accueil() {
   }, []);
 
   useEffect(() => { if (profile) charger(); }, [profile, charger]);
+
+  if (!isSupabaseConfigured) {
+    return (
+      <main className="login-page">
+        <section className="login-card" aria-labelledby="setup-title">
+          <div className="login-brand" aria-label="Salle RMM">
+            <span className="brand-mark" aria-hidden="true"><span /></span>
+            <span className="brand-name">salle<span>rmm</span></span>
+          </div>
+          <p className="section-kicker">ESPACE DE RÉSERVATION</p>
+          <h1 className="login-heading" id="setup-title">Configuration requise</h1>
+          <p className="login-description">
+            Le calendrier a besoin d’une connexion Supabase pour charger les réservations. Aucune intégration n’est configurée pour ce projet.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   if (!profile) return <p className="p-6 text-sm text-slate-500">Chargement de votre espace…</p>;
 

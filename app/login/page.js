@@ -13,6 +13,10 @@ export default function Login() {
   const connecter = async (e) => {
     e.preventDefault();
     setErreur('');
+    if (!supabase) {
+      setErreur('La connexion est indisponible : Supabase n’est pas configuré pour ce projet.');
+      return;
+    }
     setEnCours(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -33,6 +37,7 @@ export default function Login() {
         <p className="section-kicker">VOTRE ESPACE MEMBRE</p>
         <h1 className="login-heading">Ravi de vous revoir</h1>
         <p className="login-description">Connectez-vous pour consulter le calendrier et gérer vos réservations.</p>
+        {!supabase && <p className="login-error" role="status">La connexion est indisponible : Supabase n’est pas configuré pour ce projet.</p>}
 
         <label className="login-field" htmlFor="login-email">Adresse e-mail
           <input id="login-email" type="email" required autoComplete="email" placeholder="vous@exemple.fr" value={email}
@@ -43,7 +48,7 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)} className="login-input" />
         </label>
         {erreur && <p className="login-error" role="alert">{erreur}</p>}
-        <button disabled={enCours} className="login-submit">{enCours ? 'Connexion…' : 'Se connecter'}</button>
+        <button disabled={!supabase || enCours} className="login-submit">{enCours ? 'Connexion…' : 'Se connecter'}</button>
         <p className="login-footnote">Un espace dédié pour planifier vos rendez-vous.</p>
       </form>
     </main>
