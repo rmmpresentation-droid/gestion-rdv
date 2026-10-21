@@ -30,9 +30,9 @@ export default function Login() {
   return (
     <main className="login-page">
       <form onSubmit={connecter} className="login-card">
-        <div className="login-brand" aria-label="Salle RMM">
+        <div className="login-brand" aria-label="RMM Network">
           <span className="brand-mark" aria-hidden="true"><span /></span>
-          <span className="brand-name">salle<span>rmm</span></span>
+          <span className="brand-name">RMM <span>Network</span></span>
         </div>
         <p className="section-kicker">VOTRE ESPACE MEMBRE</p>
         <h1 className="login-heading">Ravi de vous revoir</h1>

@@ -42,7 +42,7 @@ export default function Accueil() {
 
   const charger = useCallback(async () => {
     const { data } = await supabase.from('creneaux').select('*');
-    setEvents((data || []).map((c) => ({
+    return (data || []).map((c) => ({
       id: c.id,
       title: c.titre_public,
       start: c.debut,
@@ -50,18 +50,23 @@ export default function Accueil() {
       backgroundColor: COULEURS[c.type],
       borderColor: c.est_a_moi ? '#25324b' : COULEURS[c.type],
       extendedProps: { type: c.type },
-    })));
+    }));
   }, []);
 
-  useEffect(() => { if (profile) charger(); }, [profile, charger]);
+  useEffect(() => {
+    if (!profile) return;
+    let active = true;
+    charger().then((nextEvents) => { if (active) setEvents(nextEvents); });
+    return () => { active = false; };
+  }, [profile, charger]);
 
   if (!isSupabaseConfigured) {
     return (
       <main className="login-page">
         <section className="login-card" aria-labelledby="setup-title">
-          <div className="login-brand" aria-label="Salle RMM">
+          <div className="login-brand" aria-label="RMM Network">
             <span className="brand-mark" aria-hidden="true"><span /></span>
-            <span className="brand-name">salle<span>rmm</span></span>
+            <span className="brand-name">RMM <span>Network</span></span>
           </div>
           <p className="section-kicker">ESPACE DE RÉSERVATION</p>
           <h1 className="login-heading" id="setup-title">Configuration requise</h1>
@@ -129,7 +134,7 @@ const { error } = await supabase.from('reservations').insert({
     } else {
       setForm(null);
       setEnCours(false);
-      charger();
+      charger().then(setEvents);
     }
   };
 

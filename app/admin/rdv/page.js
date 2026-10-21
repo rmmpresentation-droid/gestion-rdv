@@ -1,149 +1,213 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/lib/useProfile';
 import Nav from '@/components/Nav';
 
-const fmt = (d) => new Date(d).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
-const un = (x) => (Array.isArray(x) ? x[0] : x) || null;
+const formatDate = (value) => new Date(value).toLocaleDateString('fr-FR', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+});
+const formatTime = (value) => new Date(value).toLocaleTimeString('fr-FR', {
+  hour: '2-digit', minute: '2-digit',
+});
+const unwrap = (value) => (Array.isArray(value) ? value[0] : value) || null;
+const resultLabels = { inscrit: 'Inscrit', a_relancer: 'À relancer', refuse: 'Refusé' };
 
-function ResultatForm({ resa, existant, onSaved }) {
-  const [f, setF] = useState({
-    nom_prospect: existant?.nom_prospect || '',
-    telephone_prospect: existant?.telephone_prospect || '',
+function Field({ label, htmlFor, children }) {
+  return <label className="admin-field" htmlFor={htmlFor}><span>{label}</span>{children}</label>;
+}
+
+function ResultatForm({ reservation, existant, onSaved }) {
+  const premierInvite = reservation.invites?.[0] || {};
+  const [form, setForm] = useState({
+    nom_prospect: existant?.nom_prospect || premierInvite.nom || '',
+    telephone_prospect: existant?.telephone_prospect || premierInvite.telephone || '',
     present: existant?.present ?? true,
     resultat: existant?.resultat || 'a_relancer',
     produit_pack: existant?.produit_pack || '',
     commentaire: existant?.commentaire || '',
-    date_relance: existant?.date_relance || '',
+    date_relance: existant?.date_relance?.slice(0, 10) || '',
     nb_presents: existant?.nb_presents ?? '',
-    nom_prospect: existant?.nom_prospect || resa.invites?.[0]?.nom || '',
-telephone_prospect: existant?.telephone_prospect || resa.invites?.[0]?.telephone || '',
   });
-  const set = (k) => (e) =>
-    setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
+  const [enCours, setEnCours] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const update = (key) => (event) => setForm((current) => ({
+    ...current,
+    [key]: event.target.type === 'checkbox' ? event.target.checked : event.target.value,
+  }));
 
-  const enregistrer = async () => {
-    const payload = { reservation_id: resa.id, commentaire: f.commentaire || null };
-    if (resa.type === 'rdv') {
+  const enregistrer = async (event) => {
+    event.preventDefault();
+    setEnCours(true);
+    setErreur('');
+    const payload = { reservation_id: reservation.id, commentaire: form.commentaire || null };
+    if (reservation.type === 'rdv') {
       Object.assign(payload, {
-        nom_prospect: f.nom_prospect,
-        telephone_prospect: f.telephone_prospect,
-        present: f.present,
-        resultat: f.present ? f.resultat : null,
-        produit_pack: f.produit_pack || null,
-        date_relance: f.date_relance || null,
+        nom_prospect: form.nom_prospect,
+        telephone_prospect: form.telephone_prospect,
+        present: form.present,
+        resultat: form.present ? form.resultat : null,
+        produit_pack: form.produit_pack || null,
+        date_relance: form.date_relance || null,
       });
     } else {
-      payload.nb_presents = f.nb_presents === '' ? null : Number(f.nb_presents);
+      payload.nb_presents = form.nb_presents === '' ? null : Number(form.nb_presents);
     }
-    await supabase.from('rdv_resultats').upsert(payload, { onConflict: 'reservation_id' });
-    await supabase.from('reservations').update({ statut: 'terminee' }).eq('id', resa.id);
+    const { error: saveError } = await supabase.from('rdv_resultats').upsert(payload, { onConflict: 'reservation_id' });
+    if (saveError) {
+      setErreur('Le résultat n’a pas pu être enregistré. Vérifiez les informations puis réessayez.');
+      setEnCours(false);
+      return;
+    }
+    const { error: updateError } = await supabase.from('reservations').update({ statut: 'terminee' }).eq('id', reservation.id);
+    if (updateError) {
+      setErreur('Le résultat est enregistré, mais le statut du rendez-vous n’a pas pu être actualisé.');
+      setEnCours(false);
+      return;
+    }
+    setEnCours(false);
     onSaved();
   };
 
-  const champ = 'w-full rounded border p-2';
   return (
-    <div className="mt-3 space-y-2 border-t pt-3">
-      {resa.type === 'rdv' ? (
+    <form className="result-form" onSubmit={enregistrer}>
+      <div className="result-form-heading"><div><p className="workspace-eyebrow">COMPTE RENDU</p><h3>{reservation.type === 'rdv' ? 'Résultat du rendez-vous' : 'Présence à la formation'}</h3></div><span className="form-required-note">Les champs avec * sont obligatoires</span></div>
+      {reservation.type === 'rdv' ? (
         <>
-          <input placeholder="Nom du prospect" value={f.nom_prospect} onChange={set('nom_prospect')} className={champ} />
-          <input placeholder="Téléphone" value={f.telephone_prospect} onChange={set('telephone_prospect')} className={champ} />
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={f.present} onChange={set('present')} /> Le prospect est venu
-          </label>
-          {f.present && (
-            <>
-              <select value={f.resultat} onChange={set('resultat')} className={champ}>
-                <option value="inscrit">Inscrit</option>
-                <option value="a_relancer">Intéressé, à relancer</option>
-                <option value="refuse">Refusé</option>
-              </select>
-              <input placeholder="Produit / pack concerné" value={f.produit_pack} onChange={set('produit_pack')} className={champ} />
-            </>
-          )}
-          <label className="block text-sm">Date de relance
-            <input type="date" value={f.date_relance} onChange={set('date_relance')} className={champ} />
-          </label>
+          <div className="admin-form-grid">
+            <Field label="Nom du prospect *" htmlFor={`prospect-${reservation.id}`}><input id={`prospect-${reservation.id}`} required value={form.nom_prospect} onChange={update('nom_prospect')} className="admin-control" placeholder="Nom complet" /></Field>
+            <Field label="Téléphone" htmlFor={`phone-${reservation.id}`}><input id={`phone-${reservation.id}`} type="tel" value={form.telephone_prospect} onChange={update('telephone_prospect')} className="admin-control" placeholder="06 00 00 00 00" /></Field>
+          </div>
+          <label className="attendance-toggle"><input type="checkbox" checked={form.present} onChange={update('present')} /><span className="toggle-copy"><strong>Le prospect était présent</strong><small>Indiquez sa présence avant de qualifier le rendez-vous.</small></span></label>
+          {form.present && <div className="admin-form-grid">
+            <Field label="Résultat *" htmlFor={`result-${reservation.id}`}><select id={`result-${reservation.id}`} value={form.resultat} onChange={update('resultat')} className="admin-control"><option value="inscrit">Inscrit</option><option value="a_relancer">À relancer</option><option value="refuse">Refusé</option></select></Field>
+            <Field label="Produit ou pack" htmlFor={`product-${reservation.id}`}><input id={`product-${reservation.id}`} value={form.produit_pack} onChange={update('produit_pack')} className="admin-control" placeholder="Ex. Pack découverte" /></Field>
+          </div>}
+          <Field label="Date de relance" htmlFor={`followup-${reservation.id}`}><input id={`followup-${reservation.id}`} type="date" value={form.date_relance} onChange={update('date_relance')} className="admin-control" /></Field>
         </>
-      ) : (
-        <input type="number" min="0" placeholder="Nombre de présents" value={f.nb_presents}
-          onChange={set('nb_presents')} className={champ} />
-      )}
-      <textarea placeholder="Commentaire" value={f.commentaire} onChange={set('commentaire')} className={champ} />
-      <button onClick={enregistrer} className="rounded bg-slate-900 px-4 py-2 text-white">Enregistrer</button>
-    </div>
+      ) : <Field label="Nombre de participants présents" htmlFor={`attendees-${reservation.id}`}><input id={`attendees-${reservation.id}`} type="number" min="0" value={form.nb_presents} onChange={update('nb_presents')} className="admin-control" placeholder="0" /></Field>}
+      <Field label="Commentaire" htmlFor={`comment-${reservation.id}`}><textarea id={`comment-${reservation.id}`} value={form.commentaire} onChange={update('commentaire')} className="admin-control admin-textarea" placeholder="Ajoutez les informations utiles au suivi…" /></Field>
+      {erreur && <p className="workspace-alert" role="alert">{erreur}</p>}
+      <div className="result-form-actions"><button type="submit" disabled={enCours} className="workspace-primary">{enCours ? 'Enregistrement…' : 'Enregistrer le compte rendu'}</button></div>
+    </form>
   );
 }
+
+const tabs = [
+  { id: 'all', label: 'Tout' },
+  { id: 'a_suivre', label: 'À suivre' },
+  { id: 'terminees', label: 'Terminés' },
+  { id: 'formations', label: 'Formations' },
+];
 
 export default function SuiviRdv() {
   const profile = useProfile({ adminOnly: true });
   const [liste, setListe] = useState([]);
   const [ouvert, setOuvert] = useState(null);
+  const [filtre, setFiltre] = useState('all');
+  const [recherche, setRecherche] = useState('');
+  const [erreur, setErreur] = useState('');
+  const [chargement, setChargement] = useState(true);
+  const [annulation, setAnnulation] = useState(null);
+  const userId = profile?.id;
 
   const charger = useCallback(async () => {
-    const { data } = await supabase.from('reservations')
+    if (!userId) return null;
+    const { data, error } = await supabase.from('reservations')
       .select('*, profiles(nom), rdv_resultats(*)')
       .neq('statut', 'annulee').order('debut', { ascending: false });
-    setListe(data || []);
-    setOuvert(null);
-  }, []);
+    return { data: data || [], error };
+  }, [userId]);
 
-  useEffect(() => { if (profile) charger(); }, [profile, charger]);
+  useEffect(() => {
+    let active = true;
+    charger().then((result) => {
+      if (!active || !result) return;
+      if (result.error) setErreur('Impossible de charger le suivi des rendez-vous. Réessayez.');
+      else setListe(result.data);
+      setOuvert(null);
+      setChargement(false);
+    });
+    return () => { active = false; };
+  }, [charger]);
 
-  const annuler = async (id) => {
-    if (!confirm('Annuler cette réservation ?')) return;
-    await supabase.from('reservations').update({ statut: 'annulee' }).eq('id', id);
-    charger();
+  const annuler = async (reservation) => {
+    if (!window.confirm('Annuler cette réservation ?')) return;
+    setAnnulation(reservation.id);
+    const { error } = await supabase.from('reservations').update({ statut: 'annulee' }).eq('id', reservation.id);
+    if (error) setErreur('Le rendez-vous n’a pas pu être annulé. Réessayez.');
+    else {
+      const result = await charger();
+      if (result?.error) setErreur('Le rendez-vous est annulé, mais la liste n’a pas pu être actualisée.');
+      else if (result) setListe(result.data);
+      setOuvert(null);
+    }
+    setAnnulation(null);
   };
 
-  if (!profile) return <p className="p-6">Chargement…</p>;
+  const counts = useMemo(() => ({
+    total: liste.length,
+    a_suivre: liste.filter((item) => !unwrap(item.rdv_resultats)).length,
+    terminees: liste.filter((item) => Boolean(unwrap(item.rdv_resultats))).length,
+    formations: liste.filter((item) => item.type === 'formation').length,
+  }), [liste]);
+  const visibles = useMemo(() => liste.filter((item) => {
+    const result = unwrap(item.rdv_resultats);
+    const text = `${item.titre || ''} ${item.profiles?.nom || ''} ${result?.nom_prospect || ''} ${item.invites?.map((guest) => guest.nom).join(' ') || ''}`.toLocaleLowerCase('fr');
+    const matchesText = text.includes(recherche.toLocaleLowerCase('fr'));
+    const matchesFilter = filtre === 'all'
+      || (filtre === 'a_suivre' && !result)
+      || (filtre === 'terminees' && Boolean(result))
+      || (filtre === 'formations' && item.type === 'formation');
+    return matchesText && matchesFilter;
+  }), [filtre, liste, recherche]);
+
+  if (!profile) return <p className="page-loading">Chargement de votre espace…</p>;
 
   return (
     <>
       <Nav profile={profile} />
-      <main className="mx-auto max-w-3xl space-y-3 p-4">
-        <h1 className="text-xl font-bold">Suivi des rendez-vous et formations</h1>
-        {liste.map((r) => {
-          const res = un(r.rdv_resultats);
-          return (
-            <div key={r.id} className="rounded bg-white p-3 shadow">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold">{r.titre} <span className="text-xs text-slate-500">({r.type})</span></p>
-                  <p className="text-sm">{fmt(r.debut)} · par {r.profiles?.nom}</p>
-                  {r.invites?.length > 0 && (
-  <p className="text-sm text-slate-600">
-    Invités : {r.invites.map((i) => [i.nom, i.telephone, i.email].filter(Boolean).join(' · ')).join(' ; ')}
-  </p>
-)}
-                  {res && r.type === 'rdv' && (
-                    <p className="text-sm text-green-700">
-                      {res.nom_prospect} — {res.present ? res.resultat : 'absent'}
-                    </p>
-                  )}
-                  {res && r.type === 'formation' && (
-                    <p className="text-sm text-green-700">{res.nb_presents ?? '?'} présents</p>
-                  )}
+      <main className="workspace-page workspace-page-wide">
+        <section className="workspace-heading">
+          <div><p className="workspace-eyebrow">PILOTAGE · ÉQUIPE</p><h1>Suivi des rendez-vous</h1><p className="workspace-description">Centralisez les comptes rendus, les présences et les prochaines relances.</p></div>
+        </section>
+        <section className="workspace-metrics" aria-label="Résumé du suivi">
+          <article className="workspace-metric"><span className="metric-symbol metric-symbol-indigo" aria-hidden="true">▤</span><div><span className="metric-label">Réservations suivies</span><strong>{counts.total}</strong></div></article>
+          <article className="workspace-metric"><span className="metric-symbol metric-symbol-amber" aria-hidden="true">◷</span><div><span className="metric-label">À traiter</span><strong>{counts.a_suivre}</strong></div></article>
+          <article className="workspace-metric"><span className="metric-symbol metric-symbol-teal" aria-hidden="true">✓</span><div><span className="metric-label">Comptes rendus</span><strong>{counts.terminees}</strong></div></article>
+        </section>
+        <section className="workspace-panel" aria-labelledby="followup-title">
+          <div className="workspace-panel-heading"><div><p className="workspace-eyebrow">ACTIVITÉ DE L’ÉQUIPE</p><h2 id="followup-title">Rendez-vous et formations</h2></div><label className="workspace-search"><span className="search-icon" aria-hidden="true">⌕</span><span className="sr-only">Rechercher dans le suivi</span><input value={recherche} onChange={(event) => setRecherche(event.target.value)} placeholder="Nom, prospect, titre…" /></label></div>
+          <div className="workspace-filters" role="group" aria-label="Filtrer le suivi">
+            {tabs.map((tab) => <button key={tab.id} type="button" className={`filter-chip${filtre === tab.id ? ' filter-chip-active' : ''}`} onClick={() => setFiltre(tab.id)} aria-pressed={filtre === tab.id}>{tab.label}<span>{counts[tab.id === 'all' ? 'total' : tab.id]}</span></button>)}
+          </div>
+          {erreur && <p className="workspace-alert" role="alert">{erreur}</p>}
+          {chargement ? <p className="workspace-message">Chargement du suivi…</p> : visibles.length === 0 ? (
+            <div className="workspace-empty"><span className="empty-symbol" aria-hidden="true">⌕</span><h3>{recherche || filtre !== 'all' ? 'Aucun résultat' : 'Aucune réservation à suivre'}</h3><p>Les rendez-vous et formations apparaîtront ici dès qu’ils seront planifiés.</p></div>
+          ) : <div className="followup-list">{visibles.map((reservation) => {
+            const result = unwrap(reservation.rdv_resultats);
+            const isOpen = ouvert === reservation.id;
+            return (
+              <article key={reservation.id} className={`followup-card${isOpen ? ' followup-card-open' : ''}`}>
+                <div className="followup-card-main">
+                  <span className={`reservation-type-mark ${reservation.type === 'rdv' ? 'reservation-type-rdv' : 'reservation-type-formation'}`} aria-hidden="true">{reservation.type === 'rdv' ? 'R' : 'F'}</span>
+                  <div className="followup-content">
+                    <div className="reservation-title-line"><h3>{reservation.titre}</h3><span className={`status-pill ${result ? 'status-terminee' : 'status-confirmee'}`}>{result ? 'Compte rendu saisi' : 'À traiter'}</span></div>
+                    <p className="reservation-meta"><span>{reservation.type === 'rdv' ? 'Rendez-vous' : 'Formation'}</span><span aria-hidden="true">·</span><span>{formatDate(reservation.debut)} · {formatTime(reservation.debut)}</span></p>
+                    <p className="followup-owner">Organisé par <strong>{reservation.profiles?.nom || 'Membre'}</strong></p>
+                    {reservation.invites?.length > 0 && <p className="reservation-guests">Invités : {reservation.invites.map((guest) => [guest.nom, guest.telephone, guest.email].filter(Boolean).join(' · ')).join(' ; ')}</p>}
+                    {result && reservation.type === 'rdv' && <div className="followup-result"><span>{result.present ? resultLabels[result.resultat] || 'Résultat saisi' : 'Absent'}</span>{result.nom_prospect && <strong>{result.nom_prospect}</strong>}{result.produit_pack && <span>{result.produit_pack}</span>}</div>}
+                    {result && reservation.type === 'formation' && <div className="followup-result"><strong>{result.nb_presents ?? '—'}</strong><span>participant{result.nb_presents === 1 ? '' : 's'} présent{result.nb_presents === 1 ? '' : 's'}</span></div>}
+                    {result?.date_relance && <p className="followup-reminder">Relance prévue le {formatDate(result.date_relance)}</p>}
+                  </div>
+                  <div className="followup-actions"><button type="button" className="row-action" onClick={() => setOuvert(isOpen ? null : reservation.id)} aria-expanded={isOpen}>{isOpen ? 'Fermer' : result ? 'Modifier' : 'Saisir le résultat'}</button>{reservation.statut === 'confirmee' && <button type="button" className="row-action row-action-danger" disabled={annulation === reservation.id} onClick={() => annuler(reservation)}>{annulation === reservation.id ? 'Annulation…' : 'Annuler'}</button>}</div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setOuvert(ouvert === r.id ? null : r.id)} className="rounded border px-3 py-1">
-                    {res ? 'Modifier' : 'Résultat'}
-                  </button>
-                  {r.statut === 'confirmee' && (
-                    <button onClick={() => annuler(r.id)} className="rounded border border-red-500 px-3 py-1 text-red-600">
-                      Annuler
-                    </button>
-                  )}
-                </div>
-              </div>
-              {ouvert === r.id && <ResultatForm 
-              
-
-              resa={r} existant={res} onSaved={charger} />}
-            </div>
-          );
-        })}
+                {isOpen && <ResultatForm key={`${reservation.id}-${result?.id || 'new'}`} reservation={reservation} existant={result} onSaved={charger} />}
+              </article>
+            );
+          })}</div>}
+          <div className="workspace-panel-footer">{visibles.length} élément{visibles.length !== 1 ? 's' : ''} affiché{visibles.length !== 1 ? 's' : ''}</div>
+        </section>
       </main>
     </>
   );
