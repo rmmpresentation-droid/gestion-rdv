@@ -471,3 +471,93 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .credentials-notice { padding: 13px; }
   .credentials-notice p { font-size: 9px; }
 }
+
+/* Ajustement léger de la taille des textes pour améliorer le confort de lecture. */
+.brand-name { font-size: 18px; }
+.nav-link { font-size: 14px; }
+.account-name { font-size: 13px; }
+.account-role { font-size: 11px; }
+.logout-button { font-size: 13px; }
+.welcome-description { font-size: 14px; }
+.overview-card-top, .overview-detail { font-size: 12px; }
+.calendar-section-heading .section-kicker, .booking-heading .section-kicker { font-size: 10px; }
+.calendar-legend { font-size: 12px; }
+.calendar-hint { font-size: 11px; }
+.calendar-shell .fc { font-size: 12px; }
+.calendar-shell .fc .fc-button { font-size: 11px; }
+.calendar-shell .fc .fc-col-header-cell-cushion { font-size: 11px; }
+.calendar-shell .fc .fc-timegrid-slot-label, .calendar-shell .fc .fc-timegrid-axis-cushion { font-size: 10px; }
+.calendar-shell .fc .fc-event { font-size: 11px; }
+.booking-label { font-size: 12px; }
+.booking-control { font-size: 13px; }
+.optional-label, .booking-help { font-size: 11px; }
+.login-description { font-size: 13px; }
+.login-field { font-size: 12px; }
+.login-input, .login-submit { font-size: 13px; }
+.login-error { font-size: 12px; }
+.login-footnote { font-size: 11px; }
+.page-loading, .workspace-message { font-size: 14px; }
+.workspace-eyebrow { font-size: 11px; }
+.workspace-description { font-size: 14px; }
+.workspace-primary { font-size: 13px; }
+.metric-label { font-size: 12px; }
+.workspace-panel-heading .workspace-eyebrow { font-size: 10px; }
+.workspace-search input { font-size: 12px; }
+.filter-chip { font-size: 12px; }
+.filter-chip > span { font-size: 10px; }
+.reservation-title-line h3 { font-size: 14px; }
+.status-pill { font-size: 10px; }
+.reservation-meta { font-size: 11px; }
+.reservation-time { font-size: 12px; }
+.reservation-guests { font-size: 11px; }
+.row-action { font-size: 11px; }
+.workspace-empty h3 { font-size: 15px; }
+.workspace-empty p { font-size: 12px; }
+.workspace-panel-footer { font-size: 11px; }
+.workspace-alert { font-size: 12px; }
+.followup-owner { font-size: 11px; }
+.followup-result, .followup-reminder { font-size: 11px; }
+.result-form-heading h3 { font-size: 15px; }
+.form-required-note { font-size: 10px; }
+.admin-field { font-size: 11px; }
+.admin-field > span small { font-size: 10px; }
+.admin-control { font-size: 12px; }
+.toggle-copy strong { font-size: 11px; }
+.toggle-copy small { font-size: 10px; }
+.result-form-actions .workspace-primary, .user-form-footer .workspace-primary { font-size: 11px; }
+.period-label { font-size: 11px; }
+.analytics-metric-top, .analytics-table { font-size: 11px; }
+.analytics-metric > p { font-size: 10px; }
+.subtle-count, .analytics-table th { font-size: 10px; }
+.analytics-table tbody th { font-size: 11px; }
+.breakdown-label { font-size: 11px; }
+.breakdown-item > p, .analytics-note p { font-size: 10px; }
+.user-form-footer p { font-size: 11px; }
+.credentials-notice > div > strong { font-size: 12px; }
+.credentials-notice p, .credentials-notice code { font-size: 11px; }
+.credentials-notice small { font-size: 10px; }
+.user-identity > span { font-size: 10px; }
+.user-name-input { font-size: 12px; }
+.user-edit-field .admin-control, .user-role-field .admin-control { font-size: 11px; }
+
+@media (max-width: 600px) {
+  .brand-name { font-size: 16px; }
+  .nav-link { font-size: 12px; }
+  .welcome-description, .workspace-description { font-size: 12px; }
+  .overview-card-top, .overview-detail { font-size: 11px; }
+  .calendar-legend { font-size: 12px; }
+  .calendar-shell .fc .fc-button { font-size: 10px; }
+  .calendar-shell .fc .fc-col-header-cell-cushion { font-size: 10px; }
+  .booking-label, .login-field { font-size: 11px; }
+  .booking-control, .login-input, .login-submit { font-size: 12px; }
+  .workspace-primary { font-size: 12px; }
+  .metric-label { font-size: 10px; }
+  .filter-chip { font-size: 11px; }
+  .reservation-title-line h3 { font-size: 12px; }
+  .reservation-meta { font-size: 10px; }
+  .reservation-time { font-size: 11px; }
+  .reservation-row .row-action { font-size: 10px; }
+  .analytics-metric-top, .period-label { font-size: 10px; }
+  .analytics-metric > p { font-size: 9px; }
+  .credentials-notice p { font-size: 10px; }
+}
