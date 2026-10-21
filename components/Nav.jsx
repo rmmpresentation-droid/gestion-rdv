@@ -24,9 +24,9 @@ export default function Nav({ profile }) {
   return (
     <header className="app-header">
       <nav className="app-nav" aria-label="Navigation principale">
-        <Link href="/" className="brand-lockup" aria-label="Salle RMM, accueil">
+        <Link href="/" className="brand-lockup" aria-label="RMM Network, accueil">
           <span className="brand-mark" aria-hidden="true"><span /></span>
-          <span className="brand-name">salle<span>rmm</span></span>
+          <span className="brand-name">RMM <span>Network</span></span>
         </Link>
 
         <div className="nav-links">

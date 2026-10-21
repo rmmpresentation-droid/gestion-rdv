@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: {
-    default: "Salle RMM — Réservation",
-    template: "%s | Salle RMM",
+    default: "RMM Network — Réservations",
+    template: "%s | RMM Network",
   },
-  description: "Consultez le calendrier de la salle RMM et gérez vos rendez-vous et formations.",
+  description: "Gérez les réservations, les rendez-vous et les formations de votre réseau RMM.",
 };
 
 export const viewport: Viewport = {
