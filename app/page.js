@@ -77,10 +77,10 @@ export default function Accueil() {
 
   const ouvrir = (debut, fin) => {
     setErreur('');
-    setForm({
-      type: profile.role === 'admin' ? 'rdv' : 'formation',
-      titre: '', debut: versInput(debut), fin: versInput(fin), nb: '', notes: '',
-    });
+setForm({
+  type: profile.role === 'admin' ? 'rdv' : 'formation',
+  titre: '', debut: versInput(debut), fin: versInput(fin), nb: '', notes: '', invites: [],
+});
   };
 
   const nouvelle = () => {
@@ -90,6 +90,13 @@ export default function Accueil() {
   };
 
   const maj = (k) => (e) => setForm((current) => ({ ...current, [k]: e.target.value }));
+  
+  const ajouterInvite = () =>
+  setForm((c) => (c.invites.length >= 20 ? c : { ...c, invites: [...c.invites, { nom: '', telephone: '', email: '' }] }));
+const majInvite = (i, k) => (e) =>
+  setForm((c) => ({ ...c, invites: c.invites.map((inv, j) => (j === i ? { ...inv, [k]: e.target.value } : inv)) }));
+const retirerInvite = (i) =>
+  setForm((c) => ({ ...c, invites: c.invites.filter((_, j) => j !== i) }));
 
   const enregistrer = async (e) => {
     e.preventDefault();
@@ -98,17 +105,22 @@ export default function Accueil() {
     const fin = new Date(form.fin);
     if (fin <= debut) return setErreur('La fin doit être après le début.');
     if (debut < new Date()) return setErreur('Impossible de réserver dans le passé.');
+    const invites = form.invites
+  .map((i) => ({ nom: i.nom.trim(), telephone: i.telephone.trim(), email: i.email.trim() }))
+  .filter((i) => i.nom || i.telephone || i.email);
+if (invites.some((i) => !i.nom)) return setErreur('Chaque invité doit avoir un nom.');
 
     setEnCours(true);
-    const { error } = await supabase.from('reservations').insert({
-      user_id: profile.id,
-      type: form.type,
-      titre: form.titre,
-      debut: debut.toISOString(),
-      fin: fin.toISOString(),
-      nb_participants: form.nb ? Number(form.nb) : null,
-      notes: form.notes || null,
-    });
+const { error } = await supabase.from('reservations').insert({
+  user_id: profile.id,
+  type: form.type,
+  titre: form.titre,
+  debut: debut.toISOString(),
+  fin: fin.toISOString(),
+  nb_participants: form.nb ? Number(form.nb) : null,
+  notes: form.notes || null,
+  invites,
+});
 
     if (error) {
       setErreur(error.message.includes('pas_de_chevauchement')
@@ -233,7 +245,20 @@ export default function Accueil() {
 
             <label className="booking-label" htmlFor="booking-participants">Participants prévus <span className="optional-label">(facultatif)</span></label>
             <input id="booking-participants" type="number" min="1" placeholder="Nombre de participants" value={form.nb} onChange={maj('nb')} className="booking-control" />
-
+            <div className="guest-block">
+  <div className="guest-block-head">
+    <span className="booking-label guest-title">Invités <span className="optional-label">(facultatif)</span></span>
+    <button type="button" onClick={ajouterInvite} className="guest-add">＋ Ajouter un invité</button>
+  </div>
+  {form.invites.map((inv, i) => (
+    <div key={i} className="guest-row">
+      <input required placeholder="Nom de l’invité" value={inv.nom} onChange={majInvite(i, 'nom')} className="booking-control" aria-label={`Nom de l’invité ${i + 1}`} />
+      <input type="tel" placeholder="Téléphone" value={inv.telephone} onChange={majInvite(i, 'telephone')} className="booking-control" aria-label={`Téléphone de l’invité ${i + 1}`} />
+      <input type="email" placeholder="E-mail" value={inv.email} onChange={majInvite(i, 'email')} className="booking-control" aria-label={`E-mail de l’invité ${i + 1}`} />
+      <button type="button" onClick={() => retirerInvite(i)} className="guest-remove" aria-label={`Retirer l’invité ${i + 1}`}>×</button>
+    </div>
+  ))}
+</div>
             <label className="booking-label" htmlFor="booking-notes">Notes <span className="optional-label">(facultatif)</span></label>
             <textarea id="booking-notes" placeholder="Informations complémentaires…" value={form.notes} onChange={maj('notes')} className="booking-control booking-textarea" />
 

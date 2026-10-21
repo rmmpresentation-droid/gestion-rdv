@@ -17,6 +17,8 @@ function ResultatForm({ resa, existant, onSaved }) {
     commentaire: existant?.commentaire || '',
     date_relance: existant?.date_relance || '',
     nb_presents: existant?.nb_presents ?? '',
+    nom_prospect: existant?.nom_prospect || resa.invites?.[0]?.nom || '',
+telephone_prospect: existant?.telephone_prospect || resa.invites?.[0]?.telephone || '',
   });
   const set = (k) => (e) =>
     setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
@@ -110,6 +112,11 @@ export default function SuiviRdv() {
                 <div>
                   <p className="font-semibold">{r.titre} <span className="text-xs text-slate-500">({r.type})</span></p>
                   <p className="text-sm">{fmt(r.debut)} · par {r.profiles?.nom}</p>
+                  {r.invites?.length > 0 && (
+  <p className="text-sm text-slate-600">
+    Invités : {r.invites.map((i) => [i.nom, i.telephone, i.email].filter(Boolean).join(' · ')).join(' ; ')}
+  </p>
+)}
                   {res && r.type === 'rdv' && (
                     <p className="text-sm text-green-700">
                       {res.nom_prospect} — {res.present ? res.resultat : 'absent'}
@@ -130,7 +137,10 @@ export default function SuiviRdv() {
                   )}
                 </div>
               </div>
-              {ouvert === r.id && <ResultatForm resa={r} existant={res} onSaved={charger} />}
+              {ouvert === r.id && <ResultatForm 
+              
+
+              resa={r} existant={res} onSaved={charger} />}
             </div>
           );
         })}

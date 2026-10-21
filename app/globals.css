@@ -168,6 +168,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .login-error { margin: 14px 0 0; border: 1px solid #f2d6d7; border-radius: 9px; background: #fff6f6; padding: 10px 12px; color: #b93d45; font-size: 11px; }
 .login-footnote { margin: 24px 0 0; border-top: 1px solid #edf0f5; padding-top: 17px; color: #9aa4b4; font-size: 10px; text-align: center; }
 
+.guest-block { margin-top: 14px; }
+.guest-block-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.guest-title { margin: 0; }
+.guest-add { border: 0; background: none; padding: 4px 0; color: #5869d8; font-size: 11px; font-weight: 700; }
+.guest-row { display: grid; grid-template-columns: 1fr 1fr 1fr 34px; gap: 8px; margin-top: 8px; }
+.guest-remove { border: 1px solid #e8ebf2; border-radius: 9px; background: white; color: #b93d45; font-size: 18px; line-height: 1; }
+@media (max-width: 600px) {
+  .guest-row { grid-template-columns: 1fr 34px; }
+  .guest-row .booking-control:nth-child(-n+3) { grid-column: 1; }
+  .guest-remove { grid-column: 2; grid-row: 1; }
+}
+
 @media (max-width: 900px) {
   .app-nav { flex-wrap: wrap; gap: 10px 20px; padding: 12px 22px; }
   .nav-links { order: 3; width: 100%; overflow-x: auto; scrollbar-width: none; }

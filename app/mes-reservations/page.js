@@ -37,6 +37,9 @@ export default function MesReservations() {
             <div>
               <p className="font-semibold">{r.titre} <span className="text-xs text-slate-500">({r.type})</span></p>
               <p className="text-sm">{fmt(r.debut)} → {new Date(r.fin).toLocaleTimeString('fr-FR', { timeStyle: 'short' })}</p>
+              {r.invites?.length > 0 && (
+                <p className="text-sm text-slate-600">Invités : {r.invites.map((i) => i.nom).join(', ')}</p>
+              )}
               <p className="text-xs uppercase text-slate-500">{r.statut}</p>
             </div>
             {r.statut === 'confirmee' && new Date(r.debut) > new Date() && (
